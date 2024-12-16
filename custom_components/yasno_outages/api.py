@@ -48,11 +48,11 @@ class YasnoOutagesApi:
             ),
             None,
         )
-        if schedule_component:
+        if schedule_component and "schedule" in schedule_component:
             self.schedule = schedule_component["schedule"]
         else:
             LOGGER.error("Schedule component not found in the API response.")
-        if daily_schedule_component:
+        if daily_schedule_component and "dailySchedule" in daily_schedule_component:
             self.daily_schedule = daily_schedule_component["dailySchedule"]
         else:
             LOGGER.warning("Daily schedule component not found in the API response.")
@@ -60,12 +60,14 @@ class YasnoOutagesApi:
     def _build_event_hour(
         self,
         date: datetime.datetime,
-        start_hour: int,
+        start_hour: float,
     ) -> datetime.datetime:
         if start_hour == END_OF_DAY:
             start_hour = START_OF_DAY
             date = date + datetime.timedelta(days=1)
-        return date.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+        hour = int(start_hour // 1)
+        minute = int((start_hour % 1) * 60)
+        return date.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
     def fetch_schedule(self) -> None:
         """Fetch outages from the API."""
@@ -115,7 +117,10 @@ class YasnoOutagesApi:
         """Generate schedule recurrent events."""
         if not self.city or not self.group:
             return []
+
         group_schedule = self.get_group_schedule(self.city, self.group)
+        if not group_schedule:
+            return []
 
         cday = start_date.replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=start_date.weekday())
 
