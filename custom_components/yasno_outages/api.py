@@ -81,11 +81,23 @@ class YasnoOutagesApi:
 
     def get_cities(self) -> list[str]:
         """Get a list of available cities."""
-        return list(self.schedule.keys()) if self.schedule else []
+        return (
+            list(self.schedule.keys())
+            if self.schedule
+            else list(self.daily_schedule.keys())
+            if self.daily_schedule
+            else []
+        )
 
     def get_city_groups(self, city: str) -> dict[str, list]:
         """Get all schedules for all of available groups for a city."""
-        return self.schedule.get(city, {}) if self.schedule else {}
+        return (
+            self.schedule.get(city, {})
+            if self.schedule
+            else self.daily_schedule.get(city, {})
+            if self.daily_schedule
+            else {}
+        )
 
     def get_group_schedule(self, city: str, group: str) -> list:
         """Get the schedule for a specific group."""
@@ -94,7 +106,7 @@ class YasnoOutagesApi:
 
     def get_current_event(self, at: datetime.datetime) -> dict | None:
         """Get the current event."""
-        for event in self.gen_events(at, at + datetime.timedelta(days=1)):
+        for event in self.gen_events(at, at + datetime.timedelta(days = 1)):
             if event["start"] <= at < event["end"]:
                 return event
         return None
@@ -113,7 +125,9 @@ class YasnoOutagesApi:
             "type": event["type"],
         }
 
-    def gen_schedule_recurrent_events(self, start_date: datetime.datetime) -> Generator[Any, Any, Any]:
+    def gen_schedule_recurrent_events(
+        self, start_date: datetime.datetime
+    ) -> Generator[Any, Any, Any]:
         """Generate schedule recurrent events."""
         if not self.city or not self.group:
             return []
@@ -122,7 +136,9 @@ class YasnoOutagesApi:
         if not group_schedule:
             return []
 
-        cday = start_date.replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=start_date.weekday())
+        cday = start_date.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - datetime.timedelta(days=start_date.weekday())
 
         while True:
             # For each day of the week in the schedule
