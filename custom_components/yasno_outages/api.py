@@ -91,13 +91,16 @@ class YasnoOutagesApi:
 
     def get_city_groups(self, city: str) -> dict[str, list]:
         """Get all schedules for all of available groups for a city."""
-        return (
-            self.schedule.get(city, {})
-            if self.schedule
-            else self.daily_schedule.get(city, {})
-            if self.daily_schedule
-            else {}
-        )
+        if self.schedule:
+            return self.schedule.get(city, {})
+        if self.daily_schedule:
+            city_groups = {}
+            for day, details in self.daily_schedule.get(city, {}).items():
+                for group, intervals in details.get("groups", {}).items():
+                    if self.group_name.format(group=group) not in city_groups:
+                        city_groups[self.group_name.format(group=group)] = {}
+            return city_groups 
+        return {} 
 
     def get_group_schedule(self, city: str, group: str) -> list:
         """Get the schedule for a specific group."""
